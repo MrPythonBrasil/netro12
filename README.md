@@ -1,1 +1,1 @@
-# netro12
+this is public discord nitro generator
