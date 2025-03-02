@@ -73,24 +73,24 @@ class SapphireGen:
                 ).status_code
                 if req == 200:
                     print(
-                        f"{Fore.GREEN}[{strftime('%H:%M', localtime())}] discord.gift/{code} | válido"
+                        f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] discord.gift/{code} | válido"
                     )
                     open("./data/valid.txt", "a").write(f"{code}\n")
                 if req == 404:
                     print(
-                        f"{Fore.RED}[{strftime('%H:%M', localtime())}] discord.gift/{code} | inválido"
+                        f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] discord.gift/{code} | inválido"
                     )
 
                 if req == 429:
                     print(
-                        f"{Fore.YELLOW}[{strftime('%H:%M', localtime())}] discord.gift/{code} | rate limitado"
+                        f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] discord.gift/{code} | rate limitado"
                     )
 
             except Exception as e:
-                print(f"{Fore.RED}[{strftime('%H:%M', localtime())}] {e}")
+                print(f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] {e}")
 
         print(
-            f"{Fore.LIGHTMAGENTA_EX}[{strftime('%H:%M', localtime())}] Verificação concluída para {this.codes} códigos."
+            f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] Verificação concluída para {this.codes} códigos."
         )
         sleep(1.5)
         os.system("clear")
@@ -99,18 +99,18 @@ class SapphireGen:
 if __name__ == "__main__":
     while True:
         code_type = input(
-            f"{Fore.LIGHTMAGENTA_EX}[{strftime('%H:%M', localtime())}] Tipo de código (boost, classic): "
+            f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] Tipo de código (boost, classic): "
         )
         prox = input(
-            f"{Fore.LIGHTMAGENTA_EX}[{strftime('%H:%M', localtime())}] Usar proxies (True, False): "
+            f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] Usar proxies (True, False): "
         )
         if prox == "True":
             scrape_proxy = input(
-                f"{Fore.LIGHTMAGENTA_EX}[{strftime('%H:%M', localtime())}] Coletar proxies automaticamente (True, False): "
+                f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] Coletar proxies automaticamente (True, False): "
             )
         else:
             scrape_proxy = False
         codes = input(
-            f"{Fore.LIGHTMAGENTA_EX}[{strftime('%H:%M', localtime())}] Número de códigos: "
+            f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] Número de códigos: "
         )
         SapphireGen(code_type, prox, codes).generate(scrape=scrape_proxy)
