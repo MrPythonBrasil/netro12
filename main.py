@@ -1,19 +1,32 @@
-print("""
-  _____________________________    _____  ________   ________ __________   _______  .________________________ ________   
- /  _____/\_   _____/\______   \  /  _  \ \______ \  \_____  \\______   \  \      \ |   \__    ___/\______   \\_____  \  
-/   \  ___ |    __)_  |       _/ /  /_\\  \ |    |  \  /   |   \|       _/  /   |   \|   | |    |    |       _/ /   |   \ 
-\    \_\  \|        \ |    |   \/    |    \|    `   \/    |    \    |   \ /    |    \   | |    |    |    |   \/    |    \
- \______  /_______  / |____|_  /\____|__  /_______  /\_______  /____|_  / \____|__  /___| |____|    |____|_  /\_______  / 
-        \/        \/         \/         \/        \/         \/       \/          \/                       \/         \/  
-""")
-
+import sys
+import time
 from time import localtime, strftime, sleep
 from colorama import Fore
 import requests
 import random
 import string
 import os
+import itertools
+import threading
 
+def animated_text(text, delay=0.05):
+    for char in text:
+        sys.stdout.write(char)
+        sys.stdout.flush()
+        time.sleep(delay)
+    print()
+
+def loading_animation():
+    for frame in itertools.cycle(['|', '/', '-', '\\']):
+        sys.stdout.write(f"\r{Fore.BLUE}[{strftime('%H:%M', localtime())}] Gerando códigos... {frame} ")
+        sys.stdout.flush()
+        time.sleep(0.1)
+
+def progress_bar(iteration, total, length=30):
+    percent = (iteration / total)
+    bar = '█' * int(length * percent) + '-' * (length - int(length * percent))
+    sys.stdout.write(f"\r{Fore.BLUE}[{strftime('%H:%M', localtime())}] [{bar}] {int(percent * 100)}% ")
+    sys.stdout.flush()
 
 class SapphireGen:
     def __init__(this, code_type: str, prox=None, codes=None):
@@ -37,11 +50,14 @@ class SapphireGen:
     def generate(this, scrape=None):
         if scrape == "True":
             this.__proxies__()
-        else:
-            pass
-
+        
         os.system("clear")
-        for _ in range(int(this.codes)):
+        print(f"{Fore.BLUE}Iniciando geração de códigos...\n")
+        loader = threading.Thread(target=loading_animation)
+        loader.daemon = True
+        loader.start()
+        
+        for i in range(int(this.codes)):
             try:
                 if this.proxies == "True":
                     prox = {
@@ -56,14 +72,14 @@ class SapphireGen:
                     code = "".join(
                         [
                             random.choice(string.ascii_letters + string.digits)
-                            for i in range(24)
+                            for _ in range(24)
                         ]
                     )
                 else:
                     code = "".join(
                         [
                             random.choice(string.ascii_letters + string.digits)
-                            for i in range(16)
+                            for _ in range(16)
                         ]
                     )
                 req = this.session.get(
@@ -72,45 +88,31 @@ class SapphireGen:
                     timeout=10,
                 ).status_code
                 if req == 200:
-                    print(
-                        f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] discord.gift/{code} | válido"
-                    )
+                    animated_text(f"{Fore.GREEN}[{strftime('%H:%M', localtime())}] Código válido encontrado: discord.gift/{code}")
                     open("./data/valid.txt", "a").write(f"{code}\n")
-                if req == 404:
-                    print(
-                        f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] discord.gift/{code} | inválido"
-                    )
-
-                if req == 429:
-                    print(
-                        f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] discord.gift/{code} | rate limitado"
-                    )
-
+                elif req == 404:
+                    animated_text(f"{Fore.RED}[{strftime('%H:%M', localtime())}] Código inválido: discord.gift/{code}")
+                elif req == 429:
+                    animated_text(f"{Fore.YELLOW}[{strftime('%H:%M', localtime())}] Rate limitado ao validar código: discord.gift/{code}")
+                progress_bar(i + 1, int(this.codes))
             except Exception as e:
-                print(f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] {e}")
-
-        print(
-            f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] Verificação concluída para {this.codes} códigos."
-        )
+                animated_text(f"{Fore.RED}[{strftime('%H:%M', localtime())}] Erro: {e}")
+        
+        print(f"\n{Fore.BLUE}[{strftime('%H:%M', localtime())}] Verificação concluída para {this.codes} códigos.")
         sleep(1.5)
         os.system("clear")
 
-
 if __name__ == "__main__":
     while True:
-        code_type = input(
-            f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] Tipo de código (boost, classic): "
-        )
-        prox = input(
-            f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] Usar proxies (True, False): "
-        )
+        animated_text(f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] Tipo de código (boost, classic): ", 0.02)
+        code_type = input()
+        animated_text(f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] Usar proxies (True, False): ", 0.02)
+        prox = input()
         if prox == "True":
-            scrape_proxy = input(
-                f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] Coletar proxies automaticamente (True, False): "
-            )
+            animated_text(f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] Coletar proxies automaticamente (True, False): ", 0.02)
+            scrape_proxy = input()
         else:
             scrape_proxy = False
-        codes = input(
-            f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] Número de códigos: "
-        )
+        animated_text(f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] Número de códigos: ", 0.02)
+        codes = input()
         SapphireGen(code_type, prox, codes).generate(scrape=scrape_proxy)
