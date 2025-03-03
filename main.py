@@ -9,10 +9,11 @@ def send_webhook(webhook_url, message):
     try:
         print(f"Enviando para o Webhook: {message}")  # Log para depuração
         response = requests.post(webhook_url, json=payload)
+        print(f"Status Code da resposta do Webhook: {response.status_code}")  # Verificar código da resposta
         if response.status_code == 204:
             print(f"Mensagem enviada com sucesso!")  # Sucesso ao enviar
         else:
-            print(f"Erro ao enviar mensagem para o webhook. Status Code: {response.status_code}")  # Erro ao enviar
+            print(f"Erro ao enviar mensagem para o webhook. Status Code: {response.status_code}")  # Erro no envio
     except Exception as e:
         print(f"Erro ao enviar mensagem para o webhook: {e}")  # Caso ocorra algum erro ao enviar
 
@@ -40,13 +41,17 @@ class SapphireGen:
                     continue
                 generated_codes.add(code)
 
-                # Validar o código
-                print(f"Verificando o código: {code}")  # Log para depuração
+                # Log para depuração
+                print(f"Verificando o código: {code}")
 
+                # Validar o código
                 req = self.session.get(
                     f"https://discordapp.com/api/entitlements/gift-codes/{code}",
                     timeout=10,
                 )
+
+                # Verificar resposta HTTP
+                print(f"Status Code da resposta: {req.status_code}")  # Depuração
 
                 # Se o código for válido (status 200), envia para o Webhook
                 if req.status_code == 200:
