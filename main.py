@@ -2,6 +2,8 @@ import requests
 import random
 import string
 import time
+import os
+import sys
 
 # Função para enviar a mensagem com o link do código gerado para o Webhook do Discord
 def send_webhook(webhook_url, message):
@@ -45,11 +47,18 @@ class SapphireGen:
                 print(f"Erro ao gerar o código: {e}")  # Caso ocorra algum erro
 
 if __name__ == "__main__":
-    # URL do Webhook do Discord (atualizado com a URL fornecida)
-    webhook_url = "https://discord.com/api/webhooks/1346091036056883292/Y5xNeLE3w_pXz5w64w8IJZg0NleLhQe0dSv-lCziKud7DYyd2rc7NYwejwtVFEZP-tSA"
+    while True:  # Garantir que o script reinicie se falhar
+        try:
+            # URL do Webhook do Discord (atualizado com a URL fornecida)
+            webhook_url = "https://discord.com/api/webhooks/1346091036056883292/Y5xNeLE3w_pXz5w64w8IJZg0NleLhQe0dSv-lCziKud7DYyd2rc7NYwejwtVFEZP-tSA"
 
-    # Tipo de código ("boost" ou "classic")
-    code_type = "boost"  # Pode ser "boost" ou "classic"
+            # Tipo de código ("boost" ou "classic")
+            code_type = "boost"  # Pode ser "boost" ou "classic"
 
-    # Passando os parâmetros para a classe SapphireGen
-    SapphireGen(code_type, webhook_url).generate()
+            # Passando os parâmetros para a classe SapphireGen
+            SapphireGen(code_type, webhook_url).generate()
+        except Exception as e:
+            print(f"Erro crítico: {e}")
+            print("Reiniciando o script...")
+            time.sleep(5)  # Aguardar 5 segundos antes de reiniciar
+            os.execv(sys.executable, ['python'] + sys.argv)  # Reiniciar o script automaticamente
