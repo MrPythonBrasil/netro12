@@ -2,6 +2,11 @@ import requests
 import random
 import string
 import time
+import threading
+import sys
+
+# Variável para controlar o loop de geração de links
+stop_generating = False
 
 # Função para enviar a mensagem com o link do código gerado para o Webhook do Discord
 def send_webhook(webhook_url, message):
@@ -18,6 +23,16 @@ def send_webhook(webhook_url, message):
     except Exception as e:
         print(f"Erro ao enviar mensagem para o webhook: {e}")  # Caso ocorra algum erro ao enviar
 
+# Função para capturar a entrada do usuário e parar o processo
+def listen_for_stop():
+    global stop_generating
+    while True:
+        user_input = input()  # Espera por entrada no terminal
+        if user_input.lower() == "parar":  # Se o usuário digitar "parar"
+            stop_generating = True
+            print("Ok Parei")  # Mensagem indicando que o processo parou
+            break  # Interrompe o loop de entrada
+
 # Função principal de geração de códigos Nitro
 class SapphireGen:
     def __init__(self, code_type: str, webhook_url: str):
@@ -26,7 +41,8 @@ class SapphireGen:
         self.webhook_url = webhook_url
 
     def generate(self):
-        while True:  # Loop infinito para continuar gerando os códigos sem parar
+        global stop_generating
+        while not stop_generating:  # Loop para continuar gerando enquanto 'stop_generating' for False
             try:
                 # Gerar código aleatório (24 caracteres para "boost", 16 para "classic")
                 code = "".join(
@@ -53,6 +69,9 @@ if __name__ == "__main__":
 
     # Tipo de código ("boost" ou "classic")
     code_type = "boost"  # Pode ser "boost" ou "classic"
+
+    # Iniciar thread para capturar entrada do usuário
+    threading.Thread(target=listen_for_stop, daemon=True).start()
 
     # Passando os parâmetros para a classe SapphireGen
     SapphireGen(code_type, webhook_url).generate()
