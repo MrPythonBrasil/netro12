@@ -1,7 +1,6 @@
 import sys
 import time
 from time import localtime, strftime, sleep
-from colorama import Fore
 import requests
 import random
 import string
@@ -17,24 +16,13 @@ def send_webhook(webhook_url, message):
     try:
         response = requests.post(webhook_url, json=payload)
         if response.status_code == 204:
-            print(f"{Fore.GREEN}[{strftime('%H:%M', localtime())}] Mensagem enviada para o webhook.")
+            print(f"[{strftime('%H:%M', localtime())}] Mensagem enviada para o webhook.")
         else:
-            print(f"{Fore.RED}[{strftime('%H:%M', localtime())}] Erro ao enviar mensagem para o webhook.")
+            print(f"[{strftime('%H:%M', localtime())}] Erro ao enviar mensagem para o webhook.")
     except Exception as e:
-        print(f"{Fore.RED}[{strftime('%H:%M', localtime())}] Erro ao enviar mensagem para o webhook: {e}")
+        print(f"[{strftime('%H:%M', localtime())}] Erro ao enviar mensagem para o webhook: {e}")
 
-# Redirecionar as saídas do terminal (print) para o Webhook
-class WebhookOutput:
-    def __init__(self, webhook_url):
-        self.webhook_url = webhook_url
-
-    def write(self, message):
-        if message.strip():  # Envia apenas mensagens não vazias
-            send_webhook(self.webhook_url, message)
-
-    def flush(self):
-        pass  # Necessário para o funcionamento adequado do `sys.stdout`
-
+# Função principal de geração de códigos
 class SapphireGen:
     def __init__(self, code_type: str, prox=None, codes=None, webhook_url=None):
         self.type = code_type
@@ -59,7 +47,7 @@ class SapphireGen:
             self.__proxies__()
 
         os.system("cls" if os.name == "nt" else "clear")
-        print(f"{Fore.BLUE}Iniciando geração de códigos...")
+        print(f"Iniciando geração de códigos...")
 
         valid_codes = 0
         generated_codes = set()
@@ -74,57 +62,72 @@ class SapphireGen:
                 else:
                     prox = None
 
+                # Gerando código aleatório
                 code = "".join(
                     random.choices(string.ascii_letters + string.digits, k=24 if self.type == "boost" else 16)
                 )
 
+                # Verificar se o código foi gerado antes
                 if code in generated_codes:
                     continue
                 generated_codes.add(code)
 
+                # Validar o código
                 req = self.session.get(
                     f"https://discordapp.com/api/entitlements/gift-codes/{code}",
                     proxies=prox,
                     timeout=10,
                 ).status_code
 
+                # Se o código for válido
                 if req == 200:
-                    print(f"{Fore.GREEN}[{strftime('%H:%M', localtime())}] Código válido encontrado: discord.gift/{code}")
+                    print(f"Código válido encontrado: discord.gift/{code}")
                     open("./data/valid.txt", "a").write(f"discord.gift/{code}\n")
                     valid_codes += 1
                     self.send_webhook(f"Código válido encontrado: discord.gift/{code}")
                 elif req == 429:
-                    print(f"{Fore.YELLOW}[{strftime('%H:%M', localtime())}] Rate limitado ao validar código: discord.gift/{code}")
+                    print(f"Rate limitado ao validar código: discord.gift/{code}")
                     self.send_webhook(f"Rate limitado ao validar código: discord.gift/{code}")
                     sleep(2)
+
             except Exception as e:
-                print(f"{Fore.RED}[{strftime('%H:%M', localtime())}] Erro: {e}")
+                print(f"Erro: {e}")
                 self.send_webhook(f"Erro: {e}")
 
-        print(f"\n{Fore.BLUE}[{strftime('%H:%M', localtime())}] Verificação concluída para {self.codes} códigos válidos.")
+        print(f"\nVerificação concluída para {self.codes} códigos válidos.")
         self.send_webhook(f"Verificação concluída para {self.codes} códigos válidos.")
         sleep(1.5)
         os.system("cls" if os.name == "nt" else "clear")
+
+
+# Função que gerencia os diálogos do terminal
+def get_user_input():
+    print("Tipo de código (boost, classic): ", end="")
+    code_type = input()
+    print("Usar proxies (True, False): ", end="")
+    prox = input()
+    if prox == "True":
+        print("Coletar proxies automaticamente (True, False): ", end="")
+        scrape_proxy = input()
+    else:
+        scrape_proxy = False
+    print("Número de códigos válidos desejados: ", end="")
+    codes = input()
+
+    return code_type, prox, scrape_proxy, codes
+
 
 if __name__ == "__main__":
     # A URL do webhook já foi configurada diretamente no código
     webhook_url = "https://discord.com/api/webhooks/1346085542026149949/xdN-GdWGAtUOgUXIWeLnRyl4FVpz3OMhxV0V1bM3ujIXVZb_tedcPlj-4HDCgvwHVHxg"
 
-    # Redireciona as saídas do terminal para o webhook
-    sys.stdout = WebhookOutput(webhook_url)
-
+    # Loop principal que continua perguntando ao usuário
     while True:
-        print(f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] Tipo de código (boost, classic): ", end="")
-        code_type = input()
-        print(f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] Usar proxies (True, False): ", end="")
-        prox = input()
-        if prox == "True":
-            print(f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] Coletar proxies automaticamente (True, False): ", end="")
-            scrape_proxy = input()
-        else:
-            scrape_proxy = False
-        print(f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] Número de códigos válidos desejados: ", end="")
-        codes = input()
+        # Obtém as respostas do usuário
+        code_type, prox, scrape_proxy, codes = get_user_input()
 
+        # Envia as respostas para o Discord via Webhook
+        send_webhook(webhook_url, f"Tipo de código: {code_type}, Usar proxies: {prox}, Coletar proxies: {scrape_proxy}, Quantidade de códigos: {codes}")
+        
         # Passando a URL do webhook para a classe SapphireGen
         SapphireGen(code_type, prox, codes, webhook_url).generate(scrape=scrape_proxy)
