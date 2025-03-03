@@ -6,19 +6,18 @@ import string
 def send_webhook(webhook_url, message):
     payload = {"content": message}  # A mensagem será o link do código gerado
     try:
-        print(f"Enviando para o Webhook: {message}")  # Log para depuração
         response = requests.post(webhook_url, json=payload)
 
         # Verificar resposta do Webhook
         if response.status_code == 204:
-            print(f"Mensagem enviada com sucesso!")  # Sucesso ao enviar
+            print(f"Link enviado com sucesso!")  # Sucesso ao enviar
         else:
             print(f"Erro ao enviar mensagem para o webhook. Status Code: {response.status_code}")  # Erro no envio
             print(f"Detalhes do erro: {response.text}")  # Mostrar resposta do erro
     except Exception as e:
         print(f"Erro ao enviar mensagem para o webhook: {e}")  # Caso ocorra algum erro ao enviar
 
-# Função principal de geração de códigos
+# Função principal de geração de códigos Nitro
 class SapphireGen:
     def __init__(self, code_type: str, codes: int, webhook_url: str):
         self.type = code_type
@@ -44,9 +43,6 @@ class SapphireGen:
                 if discord_link in generated_codes:
                     continue
                 generated_codes.add(discord_link)
-
-                # Log para depuração
-                print(f"Gerando código: {discord_link}")
 
                 # Enviar o código gerado para o Webhook
                 send_webhook(self.webhook_url, discord_link)  # Envia o link para o Webhook
