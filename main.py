@@ -1,6 +1,7 @@
 import requests
 import random
 import string
+import time
 
 # Função para enviar a mensagem com o link do código gerado para o Webhook do Discord
 def send_webhook(webhook_url, message):
@@ -19,17 +20,13 @@ def send_webhook(webhook_url, message):
 
 # Função principal de geração de códigos Nitro
 class SapphireGen:
-    def __init__(self, code_type: str, codes: int, webhook_url: str):
+    def __init__(self, code_type: str, webhook_url: str):
         self.type = code_type
-        self.codes = codes
         self.session = requests.Session()
         self.webhook_url = webhook_url
 
     def generate(self):
-        valid_codes = 0
-        generated_codes = set()
-
-        while valid_codes < self.codes:
+        while True:  # Loop infinito para continuar gerando os códigos sem parar
             try:
                 # Gerar código aleatório (24 caracteres para "boost", 16 para "classic")
                 code = "".join(
@@ -39,14 +36,10 @@ class SapphireGen:
                 # Formatar o link para o código
                 discord_link = f"discord.gift/{code}"
 
-                # Verificar se o código foi gerado antes
-                if discord_link in generated_codes:
-                    continue
-                generated_codes.add(discord_link)
-
                 # Enviar o código gerado para o Webhook
                 send_webhook(self.webhook_url, discord_link)  # Envia o link para o Webhook
-                valid_codes += 1
+
+                time.sleep(1)  # Pausar por 1 segundo para não sobrecarregar o Webhook
 
             except Exception as e:
                 print(f"Erro ao gerar o código: {e}")  # Caso ocorra algum erro
@@ -58,8 +51,5 @@ if __name__ == "__main__":
     # Tipo de código ("boost" ou "classic")
     code_type = "boost"  # Pode ser "boost" ou "classic"
 
-    # Quantidade de códigos válidos a serem gerados
-    codes_to_generate = 10  # Modifique o número conforme necessário
-
     # Passando os parâmetros para a classe SapphireGen
-    SapphireGen(code_type, codes_to_generate, webhook_url).generate()
+    SapphireGen(code_type, webhook_url).generate()
