@@ -2,8 +2,6 @@ import requests
 import random
 import string
 import time
-import sys
-import os
 
 # Função para enviar a mensagem com o link do código gerado para o Webhook do Discord
 def send_webhook(webhook_url, message):
