@@ -1,118 +1,104 @@
 import sys
 import time
 from time import localtime, strftime, sleep
-from colorama import Fore
+from colorama import Fore, init
 import requests
 import random
 import string
 import os
-import itertools
-import threading
 
-def animated_text(text, delay=0.05):
-    for char in text:
-        sys.stdout.write(char)
-        sys.stdout.flush()
-        time.sleep(delay)
-    print()
-
-def loading_animation():
-    for frame in itertools.cycle(['|', '/', '-', '\\']):
-        sys.stdout.write(f"\r{Fore.BLUE}[{strftime('%H:%M', localtime())}] Gerando códigos... {frame} ")
-        sys.stdout.flush()
-        time.sleep(0.1)
-
-def progress_bar(iteration, total, length=30):
-    percent = (iteration / total)
-    bar = '█' * int(length * percent) + '-' * (length - int(length * percent))
-    sys.stdout.write(f"\r{Fore.BLUE}[{strftime('%H:%M', localtime())}] [{bar}] {int(percent * 100)}% ")
-    sys.stdout.flush()
+init(autoreset=True)
 
 class SapphireGen:
-    def __init__(this, code_type: str, prox=None, codes=None):
-        this.type = code_type
-        this.codes = codes
-        this.proxies = prox
-        this.session = requests.Session()
-        this.prox_api = (
-            "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt"
-        )
+    def __init__(self, code_type: str, prox=None, codes=None):
+        self.type = code_type
+        self.codes = int(codes)
+        self.proxies = prox
+        self.session = requests.Session()
+        self.prox_api = "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt"
+        self.valid_codes = []
+        self.generated_codes = set()
 
-    def __proxies__(this):
-        req = this.session.get(this.prox_api).text
-        if req != None:
-            open("./data/proxies.txt", "a+").truncate(0)
-            for proxy in req.split("\n"):
-                proxy = proxy.strip()
-                proxy = f"https://{proxy}"
-                open("./data/proxies.txt", "a").write(f"{proxy}\n")
+    def fetch_proxies(self):
+        try:
+            response = self.session.get(self.prox_api, timeout=10).text
+            if response:
+                with open("./data/proxies.txt", "w") as file:
+                    file.write(response.strip())
+        except Exception as e:
+            print(f"{Fore.RED}Erro ao buscar proxies: {e}")
 
-    def generate(this, scrape=None):
+    def get_proxy(self):
+        try:
+            return {
+                "http": random.choice(open("./data/proxies.txt", "r").read().splitlines())
+            }
+        except:
+            return None
+
+    def generate_code(self):
+        length = 24 if self.type == "boost" else 16
+        return "".join(random.choices(string.ascii_letters + string.digits, k=length))
+
+    def validate_code(self, code, proxy):
+        try:
+            response = self.session.get(
+                f"https://discordapp.com/api/entitlements/gift-codes/{code}",
+                proxies=proxy,
+                timeout=10,
+            )
+            if response.status_code == 200:
+                return "valid"
+            elif response.status_code == 404:
+                return "invalid"
+            elif response.status_code == 403:
+                return "used"
+            elif response.status_code == 429:
+                return "rate_limited"
+            else:
+                return "unknown"
+        except:
+            return "error"
+
+    def generate(self, scrape=None):
         if scrape == "True":
-            this.__proxies__()
+            self.fetch_proxies()
         
         os.system("clear")
-        print(f"{Fore.BLUE}Iniciando geração de códigos...\n")
-        loader = threading.Thread(target=loading_animation)
-        loader.daemon = True
-        loader.start()
-        
-        for i in range(int(this.codes)):
-            try:
-                if this.proxies == "True":
-                    prox = {
-                        "http": random.choice(
-                            open("./data/proxies.txt", "r").read().splitlines()
-                        )
-                    }
-                else:
-                    prox = None
+        print(f"{Fore.BLUE}Iniciando geração de códigos...")
 
-                if this.type == "boost":
-                    code = "".join(
-                        [
-                            random.choice(string.ascii_letters + string.digits)
-                            for _ in range(24)
-                        ]
-                    )
-                else:
-                    code = "".join(
-                        [
-                            random.choice(string.ascii_letters + string.digits)
-                            for _ in range(16)
-                        ]
-                    )
-                req = this.session.get(
-                    f"https://discordapp.com/api/entitlements/gift-codes/{code}",
-                    proxies=prox,
-                    timeout=10,
-                ).status_code
-                if req == 200:
-                    animated_text(f"{Fore.GREEN}[{strftime('%H:%M', localtime())}] Código válido encontrado: discord.gift/{code}")
-                    open("./data/valid.txt", "a").write(f"{code}\n")
-                elif req == 404:
-                    animated_text(f"{Fore.RED}[{strftime('%H:%M', localtime())}] Código inválido: discord.gift/{code}")
-                elif req == 429:
-                    animated_text(f"{Fore.YELLOW}[{strftime('%H:%M', localtime())}] Rate limitado ao validar código: discord.gift/{code}")
-                progress_bar(i + 1, int(this.codes))
-            except Exception as e:
-                animated_text(f"{Fore.RED}[{strftime('%H:%M', localtime())}] Erro: {e}")
-        
-        print(f"\n{Fore.BLUE}[{strftime('%H:%M', localtime())}] Verificação concluída para {this.codes} códigos.")
+        valid_count = 0
+        while valid_count < self.codes:
+            code = self.generate_code()
+            if code in self.generated_codes:
+                continue
+            self.generated_codes.add(code)
+            
+            proxy = self.get_proxy() if self.proxies == "True" else None
+            status = self.validate_code(code, proxy)
+
+            if status == "valid":
+                print(f"{Fore.GREEN}[{strftime('%H:%M', localtime())}] Código válido encontrado: discord.gift/{code}")
+                self.valid_codes.append(code)
+                with open("./data/valid.txt", "a") as file:
+                    file.write(f"discord.gift/{code}\n")
+                valid_count += 1
+            elif status == "used":
+                print(f"{Fore.YELLOW}[{strftime('%H:%M', localtime())}] Código já foi usado: discord.gift/{code}")
+            elif status == "rate_limited":
+                print(f"{Fore.YELLOW}[{strftime('%H:%M', localtime())}] Rate limitado. Aguardando...")
+                sleep(3)
+            else:
+                print(f"{Fore.RED}[{strftime('%H:%M', localtime())}] Código inválido: discord.gift/{code}")
+            
+        print(f"\n{Fore.BLUE}Geração concluída. {valid_count} códigos válidos salvos.")
         sleep(1.5)
         os.system("clear")
 
 if __name__ == "__main__":
     while True:
-        animated_text(f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] Tipo de código (boost, classic): ", 0.02)
-        code_type = input()
-        animated_text(f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] Usar proxies (True, False): ", 0.02)
-        prox = input()
-        if prox == "True":
-            animated_text(f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] Coletar proxies automaticamente (True, False): ", 0.02)
-            scrape_proxy = input()
-        else:
-            scrape_proxy = False
-        animated_text(f"{Fore.BLUE}[{strftime('%H:%M', localtime())}] Número de códigos: ", 0.02)
-        codes = input()
+        code_type = input(f"{Fore.BLUE}Tipo de código (boost, classic): ")
+        prox = input(f"{Fore.BLUE}Usar proxies (True, False): ")
+        scrape_proxy = input(f"{Fore.BLUE}Coletar proxies automaticamente (True, False): ") if prox == "True" else "False"
+        codes = input(f"{Fore.BLUE}Número de códigos válidos desejados: ")
         SapphireGen(code_type, prox, codes).generate(scrape=scrape_proxy)
