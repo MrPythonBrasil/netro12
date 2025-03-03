@@ -9,8 +9,6 @@ import os
 
 init(autoreset=True)
 
-WEBHOOK_URL = "https://discord.com/api/webhooks/1346081852397584516/m6tQM2odk-U7yu_54QAUgkCWQxQuotKHKh9KpiFAg0Bhp7GAWm64dX3I1Cn===9"  # Insira sua URL do webhook aqui
-
 class SapphireGen:
     def __init__(self, code_type: str, prox=None, codes=None):
         self.type = code_type
@@ -20,23 +18,23 @@ class SapphireGen:
         self.prox_api = "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt"
         self.valid_codes = []
         self.generated_codes = set()
-        self.proxy_list = []
-        if self.proxies == "True":
-            self.load_proxies()
 
-    def load_proxies(self):
+    def fetch_proxies(self):
         try:
             response = self.session.get(self.prox_api, timeout=10).text
             if response:
-                self.proxy_list = response.strip().split("\n")
-                print(f"{Fore.CYAN}Proxies carregados: {len(self.proxy_list)}")
+                with open("./data/proxies.txt", "w") as file:
+                    file.write(response.strip())
         except Exception as e:
             print(f"{Fore.RED}Erro ao buscar proxies: {e}")
 
     def get_proxy(self):
-        if self.proxy_list:
-            return {"http": f"http://{random.choice(self.proxy_list)}"}
-        return None
+        try:
+            return {
+                "http": random.choice(open("./data/proxies.txt", "r").read().splitlines())
+            }
+        except:
+            return None
 
     def generate_code(self):
         length = 24 if self.type == "boost" else 16
@@ -49,33 +47,26 @@ class SapphireGen:
                 proxies=proxy,
                 timeout=10,
             )
-            if response.status_code == 200:
-                return "valid"
-            elif response.status_code == 404:
-                return "invalid"
-            elif response.status_code == 403:
-                return "used"
-            else:
-                return "unknown"
+            return response.status_code
         except:
-            return "error"
+            return None
 
-    def send_to_webhook(self, code):
+    def send_to_webhook(self, webhook_url, message):
         data = {
-            "content": f"Código válido encontrado: discord.gift/{code}"
+            "content": message
         }
         try:
-            response = requests.post(WEBHOOK_URL, json=data)
+            response = requests.post(webhook_url, json=data)
             if response.status_code == 204:
-                print(f"{Fore.GREEN}Código enviado para o webhook: discord.gift/{code}")
+                print(f"{Fore.GREEN}Mensagem enviada ao webhook com sucesso!")
             else:
-                print(f"{Fore.RED}Falha ao enviar para o webhook. Status: {response.status_code}")
+                print(f"{Fore.RED}Falha ao enviar mensagem ao webhook. Status: {response.status_code}")
         except Exception as e:
             print(f"{Fore.RED}Erro ao enviar para o webhook: {e}")
 
-    def generate(self, scrape=None):
+    def generate(self, scrape=None, webhook_url=None):
         if scrape == "True":
-            self.load_proxies()
+            self.fetch_proxies()
 
         os.system("clear")
         print(f"{Fore.BLUE}Iniciando geração de códigos...")
@@ -90,22 +81,24 @@ class SapphireGen:
             proxy = self.get_proxy() if self.proxies == "True" else None
             status = self.validate_code(code, proxy)
 
-            if status == "valid":
-                print(f"{Fore.GREEN}[{strftime('%H:%M', localtime())}] Código válido encontrado: discord.gift/{code}")
+            if status == 200:
+                message = f"Código válido encontrado: discord.gift/{code}"
+                print(f"{Fore.GREEN}[{strftime('%H:%M', localtime())}] {message}")
                 self.valid_codes.append(code)
                 with open("./data/valid.txt", "a") as file:
                     file.write(f"discord.gift/{code}\n")
-                self.send_to_webhook(code)  # Envia o código para o webhook
+                
+                # Enviar o código válido ao webhook, se fornecido
+                if webhook_url:
+                    self.send_to_webhook(webhook_url, message)
+
                 valid_count += 1
-            elif status == "used":
-                print(f"{Fore.YELLOW}[{strftime('%H:%M', localtime())}] Código já foi usado: discord.gift/{code}")
-            elif status == "invalid":
-                print(f"{Fore.RED}[{strftime('%H:%M', localtime())}] Código inválido: discord.gift/{code}")
+            elif status == 429:
+                print(f"{Fore.YELLOW}[{strftime('%H:%M', localtime())}] Rate limitado. Aguardando...")
+                sleep(3)
             else:
-                print(f"{Fore.RED}[{strftime('%H:%M', localtime())}] Erro ao verificar o código: discord.gift/{code}")
-
-            sleep(random.uniform(1, 3))  # Aguarda tempo aleatório entre requisições
-
+                print(f"{Fore.RED}[{strftime('%H:%M', localtime())}] Código inválido: discord.gift/{code}")
+        
         print(f"\n{Fore.BLUE}Geração concluída. {valid_count} códigos válidos salvos.")
         sleep(1.5)
         os.system("clear")
@@ -116,4 +109,10 @@ if __name__ == "__main__":
         prox = input(f"{Fore.BLUE}Usar proxies (True, False): ")
         scrape_proxy = input(f"{Fore.BLUE}Coletar proxies automaticamente (True, False): ") if prox == "True" else "False"
         codes = input(f"{Fore.BLUE}Número de códigos válidos desejados: ")
-        SapphireGen(code_type, prox, codes).generate(scrape=scrape_proxy)
+        webhook_url = input(f"{Fore.BLUE}URL do webhook (pressione Enter para não usar): ")
+
+        # Se o usuário fornecer um URL do webhook, envie os dados para lá
+        if webhook_url.strip():
+            SapphireGen(code_type, prox, codes).generate(scrape=scrape_proxy, webhook_url=webhook_url)
+        else:
+            SapphireGen(code_type, prox, codes).generate(scrape=scrape_proxy)
