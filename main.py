@@ -5,7 +5,7 @@ import requests
 import random
 import string
 import os
-import re  # Adicionando o módulo 're' para remover sequências de cor
+import re  # Para remover sequências de controle de cor
 
 # Função para enviar mensagens para o Webhook do Discord
 def send_webhook(webhook_url, message):
@@ -101,18 +101,27 @@ class SapphireGen:
 
 
 # Função que gerencia os diálogos do terminal
-def get_user_input():
+def get_user_input(webhook_url):
+    # Captura as respostas do usuário e envia para o Discord
     print("Tipo de código (boost, classic): ", end="")
     code_type = input()
+    send_webhook(webhook_url, f"Tipo de código escolhido: {code_type}")
+
     print("Usar proxies (True, False): ", end="")
     prox = input()
+    send_webhook(webhook_url, f"Usar proxies: {prox}")
+
     if prox == "True":
         print("Coletar proxies automaticamente (True, False): ", end="")
         scrape_proxy = input()
+        send_webhook(webhook_url, f"Coletar proxies automaticamente: {scrape_proxy}")
     else:
         scrape_proxy = False
+        send_webhook(webhook_url, "Não coletar proxies automaticamente.")
+
     print("Número de códigos válidos desejados: ", end="")
     codes = input()
+    send_webhook(webhook_url, f"Número de códigos válidos desejados: {codes}")
 
     return code_type, prox, scrape_proxy, codes
 
@@ -123,11 +132,8 @@ if __name__ == "__main__":
 
     # Loop principal que continua perguntando ao usuário
     while True:
-        # Obtém as respostas do usuário
-        code_type, prox, scrape_proxy, codes = get_user_input()
+        # Obtém as respostas do usuário e envia para o Discord
+        code_type, prox, scrape_proxy, codes = get_user_input(webhook_url)
 
-        # Envia as respostas para o Discord via Webhook
-        send_webhook(webhook_url, f"Tipo de código: {code_type}, Usar proxies: {prox}, Coletar proxies: {scrape_proxy}, Quantidade de códigos: {codes}")
-        
         # Passando a URL do webhook para a classe SapphireGen
         SapphireGen(code_type, prox, codes, webhook_url).generate(scrape=scrape_proxy)
