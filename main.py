@@ -2,12 +2,12 @@ import requests
 import random
 import string
 import time
-import os
 import sys
+import os
 
 # Função para enviar a mensagem com o link do código gerado para o Webhook do Discord
 def send_webhook(webhook_url, message):
-    payload = {"content": message}  # A mensagem será o link do código gerado
+    payload = {"content": message}  # A mensagem será o link do código gerado com o emoji de foguete
     try:
         response = requests.post(webhook_url, json=payload)
 
@@ -38,8 +38,11 @@ class SapphireGen:
                 # Formatar o link para o código
                 discord_link = f"discord.gift/{code}"
 
+                # Adicionar o emoji de foguete
+                message = f"🚀 {discord_link}"
+
                 # Enviar o código gerado para o Webhook
-                send_webhook(self.webhook_url, discord_link)  # Envia o link para o Webhook
+                send_webhook(self.webhook_url, message)  # Envia o link para o Webhook
 
                 time.sleep(1)  # Pausar por 1 segundo para não sobrecarregar o Webhook
 
@@ -47,18 +50,11 @@ class SapphireGen:
                 print(f"Erro ao gerar o código: {e}")  # Caso ocorra algum erro
 
 if __name__ == "__main__":
-    while True:  # Garantir que o script reinicie se falhar
-        try:
-            # URL do Webhook do Discord (atualizado com a URL fornecida)
-            webhook_url = "https://discord.com/api/webhooks/1346091036056883292/Y5xNeLE3w_pXz5w64w8IJZg0NleLhQe0dSv-lCziKud7DYyd2rc7NYwejwtVFEZP-tSA"
+    # URL do Webhook do Discord (atualizado com a URL fornecida)
+    webhook_url = "https://discord.com/api/webhooks/1346091036056883292/Y5xNeLE3w_pXz5w64w8IJZg0NleLhQe0dSv-lCziKud7DYyd2rc7NYwejwtVFEZP-tSA"
 
-            # Tipo de código ("boost" ou "classic")
-            code_type = "boost"  # Pode ser "boost" ou "classic"
+    # Tipo de código ("boost" ou "classic")
+    code_type = "boost"  # Pode ser "boost" ou "classic"
 
-            # Passando os parâmetros para a classe SapphireGen
-            SapphireGen(code_type, webhook_url).generate()
-        except Exception as e:
-            print(f"Erro crítico: {e}")
-            print("Reiniciando o script...")
-            time.sleep(5)  # Aguardar 5 segundos antes de reiniciar
-            os.execv(sys.executable, ['python'] + sys.argv)  # Reiniciar o script automaticamente
+    # Passando os parâmetros para a classe SapphireGen
+    SapphireGen(code_type, webhook_url).generate()
