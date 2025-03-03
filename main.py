@@ -9,7 +9,6 @@ def send_webhook(webhook_url, message):
     try:
         print(f"Enviando para o Webhook: {message}")  # Log para depuração
         response = requests.post(webhook_url, json=payload)
-        print(f"Status Code da resposta do Webhook: {response.status_code}")  # Verificar código da resposta
         if response.status_code == 204:
             print(f"Mensagem enviada com sucesso!")  # Sucesso ao enviar
         else:
@@ -36,36 +35,25 @@ class SapphireGen:
                     random.choices(string.ascii_letters + string.digits, k=24 if self.type == "boost" else 16)
                 )
 
+                # Formatar o link para o código
+                discord_link = f"discord.gift/{code}"
+
                 # Verificar se o código foi gerado antes
-                if code in generated_codes:
+                if discord_link in generated_codes:
                     continue
-                generated_codes.add(code)
+                generated_codes.add(discord_link)
 
                 # Log para depuração
-                print(f"Verificando o código: {code}")
+                print(f"Gerando código: {discord_link}")
 
-                # Validar o código
-                req = self.session.get(
-                    f"https://discordapp.com/api/entitlements/gift-codes/{code}",
-                    timeout=10,
-                )
-
-                # Verificar resposta HTTP
-                print(f"Status Code da resposta: {req.status_code}")  # Depuração
-
-                # Se o código for válido (status 200), envia para o Webhook
-                if req.status_code == 200:
-                    print(f"Código válido encontrado: discord.gift/{code}")  # Para depuração
-                    send_webhook(self.webhook_url, f"discord.gift/{code}")  # Envia o link para o Webhook
-                    valid_codes += 1
-                elif req.status_code == 429:
-                    print(f"Rate limit atingido, aguardando...")  # Quando rate limit for atingido
-                    time.sleep(2)
-                else:
-                    print(f"Código inválido (status {req.status_code}): discord.gift/{code}")  # Caso o código seja inválido
+                # Simulando a validação do código (não precisa de uma validação real nesse caso)
+                # Como você quer que ele envie o código mesmo que não seja validado,
+                # vamos simplesmente enviar o link.
+                send_webhook(self.webhook_url, discord_link)  # Envia o link para o Webhook
+                valid_codes += 1
 
             except Exception as e:
-                print(f"Erro ao gerar o código ou ao fazer requisição: {e}")  # Caso ocorra algum erro
+                print(f"Erro ao gerar o código: {e}")  # Caso ocorra algum erro
 
 if __name__ == "__main__":
     # URL do Webhook do Discord
