@@ -6,9 +6,13 @@ import requests
 import random
 import string
 import os
+import re  # Adicionando o módulo 're' para remover sequências de cor
 
 # Função para enviar mensagens para o Webhook do Discord
 def send_webhook(webhook_url, message):
+    # Remover sequências de controle de cor
+    message = re.sub(r'\x1b\[[0-9;]*m', '', message)  # Regex para remover as sequências ANSI (código de cor)
+
     payload = {"content": message}
     try:
         response = requests.post(webhook_url, json=payload)
