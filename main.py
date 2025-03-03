@@ -8,7 +8,9 @@ def send_webhook(webhook_url, message):
     payload = {"content": message}
     try:
         response = requests.post(webhook_url, json=payload)
-        if response.status_code != 204:
+        if response.status_code == 204:
+            pass  # Sucesso, não imprime nada no terminal
+        else:
             print(f"Erro ao enviar mensagem para o webhook: {response.status_code}")
     except Exception as e:
         print(f"Erro ao enviar mensagem para o webhook: {e}")
@@ -38,20 +40,25 @@ class SapphireGen:
                 generated_codes.add(code)
 
                 # Validar o código
+                print(f"Verificando o código: {code}")  # Adicionado para verificar os códigos no terminal
+
                 req = self.session.get(
                     f"https://discordapp.com/api/entitlements/gift-codes/{code}",
                     timeout=10,
-                ).status_code
+                )
 
-                # Se o código for válido (resposta 200)
-                if req == 200:
+                if req.status_code == 200:
+                    # Código válido, enviar para o webhook
+                    print(f"Código válido encontrado: discord.gift/{code}")  # Imprime no terminal para depuração
                     send_webhook(self.webhook_url, f"discord.gift/{code}")
                     valid_codes += 1
-                elif req == 429:  # Rate limit
+                elif req.status_code == 429:
+                    # Se rate-limite for atingido, aguarda 2 segundos
+                    print(f"Rate limit atingido, aguardando...")  # Para depuração
                     time.sleep(2)
 
             except Exception as e:
-                pass  # Ignorar erros e continuar a execução
+                print(f"Erro ao gerar o código ou ao fazer requisição: {e}")  # Para depuração
 
 if __name__ == "__main__":
     # URL do webhook do Discord
