@@ -1,77 +1,57 @@
-import requests
-import random
-import string
-import time
-import threading
-import sys
+import uuid
+from datetime import datetime, timedelta
 
-# Variável para controlar o loop de geração de links
-stop_generating = False
+def generate_unique_link(base_url, user_id, expiration_minutes=10):
+    """
+    Gera um link único com um token e um tempo de expiração.
+    """
+    # Gera um token único
+    token = str(uuid.uuid4())
+    
+    # Calcula o tempo de expiração
+    expiration_time = datetime.utcnow() + timedelta(minutes=expiration_minutes)
+    
+    # Cria o link completo
+    link = f"{base_url}/{user_id}/{token}?expires={expiration_time.timestamp()}"
+    return link
 
-# Função para enviar a mensagem com o link do código gerado para o Webhook do Discord
-def send_webhook(webhook_url, message):
-    payload = {"content": message}  # A mensagem será o link do código gerado com o emoji de foguete
+def validate_link(link, user_id):
+    """
+    Valida se o link é válido e se ainda está dentro do prazo de expiração.
+    """
     try:
-        response = requests.post(webhook_url, json=payload)
-
-        # Verificar resposta do Webhook
-        if response.status_code == 204:
-            print(f"Link enviado com sucesso!")  # Sucesso ao enviar
-        else:
-            print(f"Erro ao enviar mensagem para o webhook. Status Code: {response.status_code}")  # Erro no envio
-            print(f"Detalhes do erro: {response.text}")  # Mostrar resposta do erro
+        # Extrai o token e o tempo de expiração do link
+        parts = link.split("/")
+        token = parts[-1].split("?")[0]
+        expiration_timestamp = float(parts[-1].split("=")[1])
+        
+        # Verifica se o link expirou
+        if datetime.utcnow().timestamp() > expiration_timestamp:
+            print("Link expirado.")
+            return False
+        
+        # Verifica se o user_id está correto (opcional)
+        if parts[-2] != user_id:
+            print("User ID não corresponde.")
+            return False
+        
+        print("Link válido.")
+        return True
     except Exception as e:
-        print(f"Erro ao enviar mensagem para o webhook: {e}")  # Caso ocorra algum erro ao enviar
+        print(f"Erro ao validar o link: {e}")
+        return False
 
-# Função para capturar a entrada do usuário e parar o processo
-def listen_for_stop():
-    global stop_generating
-    while True:
-        user_input = input()  # Espera por entrada no terminal
-        if user_input.lower() == "parar":  # Se o usuário digitar "parar"
-            stop_generating = True
-            print("Ok Parei")  # Mensagem indicando que o processo parou
-            break  # Interrompe o loop de entrada
-
-# Função principal de geração de códigos Nitro
-class SapphireGen:
-    def __init__(self, code_type: str, webhook_url: str):
-        self.type = code_type
-        self.session = requests.Session()
-        self.webhook_url = webhook_url
-
-    def generate(self):
-        global stop_generating
-        while not stop_generating:  # Loop para continuar gerando enquanto 'stop_generating' for False
-            try:
-                # Gerar código aleatório (24 caracteres para "boost", 16 para "classic")
-                code = "".join(
-                    random.choices(string.ascii_letters + string.digits, k=24 if self.type == "boost" else 16)
-                )
-
-                # Formatar o link para o código
-                discord_link = f"discord.gift/{code}"
-
-                # Adicionar o emoji de foguete
-                message = f"🚀 {discord_link}"
-
-                # Enviar o código gerado para o Webhook
-                send_webhook(self.webhook_url, message)  # Envia o link para o Webhook
-
-                time.sleep(1)  # Pausar por 1 segundo para não sobrecarregar o Webhook
-
-            except Exception as e:
-                print(f"Erro ao gerar o código: {e}")  # Caso ocorra algum erro
-
+# Exemplo de uso
 if __name__ == "__main__":
-    # URL do Webhook do Discord (atualizado com a URL fornecida)
-    webhook_url = "https://discord.com/api/webhooks/1346137737832431716/OZbSTAjFQDs-_lAny_bfLxW0KLMZ4BRGr0E1yCzr3qsS7GCthQzigOMfV1Z_8hH-4Pde"
+    # Configurações
+    base_url = "https://discord.com/billing/partner-promotions"
+    user_id = "1310745070936391821"
+    expiration_minutes = 10  # Tempo de expiração do link
 
-    # Tipo de código ("boost" ou "classic")
-    code_type = "boost"  # Pode ser "boost" ou "classic"
+    # Gera o link
+    generated_link = generate_unique_link(base_url, user_id, expiration_minutes)
+    print("Generated Link:", generated_link)
 
-    # Iniciar thread para capturar entrada do usuário
-    threading.Thread(target=listen_for_stop, daemon=True).start()
-
-    # Passando os parâmetros para a classe SapphireGen
-    SapphireGen(code_type, webhook_url).generate()
+    # Valida o link
+    is_valid = validate_link(generated_link, user_id)
+    print("Link válido?" if is_valid else "Link inválido!")
