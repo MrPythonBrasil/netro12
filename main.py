@@ -12,7 +12,7 @@ def generate_unique_link(base_url, user_id, expiration_minutes=10):
     expiration_time = datetime.utcnow() + timedelta(minutes=expiration_minutes)
     
     # Cria o link completo
-    link = f"{base_url}/{user_id}/{token}?expires={expiration_time.timestamp()}"
+    link = f"{base_url}/{user_id}/{token}?expires={int(expiration_time.timestamp())}"
     return link
 
 def validate_link(link, user_id):
@@ -22,15 +22,21 @@ def validate_link(link, user_id):
     try:
         # Extrai o token e o tempo de expiração do link
         parts = link.split("/")
-        token = parts[-1].split("?")[0]
-        expiration_timestamp = float(parts[-1].split("=")[1])
+        token_and_params = parts[-1]
+        
+        # Separa o token e os parâmetros
+        token = token_and_params.split("?")[0]
+        params = token_and_params.split("?")[1]
+        
+        # Extrai o tempo de expiração
+        expiration_timestamp = int(params.split("=")[1])
         
         # Verifica se o link expirou
         if datetime.utcnow().timestamp() > expiration_timestamp:
             print("Link expirado.")
             return False
         
-        # Verifica se o user_id está correto (opcional)
+        # Verifica se o user_id está correto
         if parts[-2] != user_id:
             print("User ID não corresponde.")
             return False
