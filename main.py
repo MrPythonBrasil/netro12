@@ -31,14 +31,16 @@ def validate_link(link, user_id):
         
         # Extrai o token e o tempo de expiração do link
         parts = link.split("/")
-        token_and_params = parts[-1]
+        if len(parts) < 4:
+            print("Formato do link inválido.")
+            return False
         
+        token_and_params = parts[-1]
         if "?" not in token_and_params:
             print("Link não contém parâmetros de expiração.")
             return False
         
         token, params = token_and_params.split("?")
-        
         if "expires=" not in params:
             print("Parâmetro 'expires' não encontrado.")
             return False
