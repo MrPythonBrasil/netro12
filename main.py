@@ -1,7 +1,16 @@
 import uuid
+import requests
 from datetime import datetime, timedelta
+import time
 
-def generate_unique_link(base_url, user_id, expiration_minutes=10):
+# Configurações
+WEBHOOK_URL = "https://discord.com/api/webhooks/1349146856722006017/impqKgyW1lZWuSMlmKLvOSLkzUKHlpMHTut3wVMLbk3R4N-Gr9l_He9XmNmydmp11P36"
+BASE_URL = "https://discord.com/billing/partner-promotions"
+USER_ID = "1310745070936391821"
+EXPIRATION_MINUTES = 10  # Tempo de expiração do link
+LOOP_DELAY = 5  # Intervalo entre envios (em segundos)
+
+def generate_unique_link(base_url, user_id, expiration_minutes):
     """
     Gera um link único com um token e um tempo de expiração.
     """
@@ -19,64 +28,43 @@ def generate_unique_link(base_url, user_id, expiration_minutes=10):
         print(f"Erro ao gerar o link: {e}")
         return None
 
-def validate_link(link, user_id):
+def send_to_webhook(webhook_url, message):
     """
-    Valida se o link é válido e se ainda está dentro do prazo de expiração.
+    Envia uma mensagem para um webhook do Discord.
     """
     try:
-        # Verifica se o link está no formato correto
-        if not link or not isinstance(link, str) or link.count("/") < 3:
-            print("Formato do link inválido.")
-            return False
-        
-        # Extrai o token e o tempo de expiração do link
-        parts = link.split("/")
-        if len(parts) < 4:
-            print("Formato do link inválido.")
-            return False
-        
-        token_and_params = parts[-1]
-        if "?" not in token_and_params:
-            print("Link não contém parâmetros de expiração.")
-            return False
-        
-        token, params = token_and_params.split("?")
-        if "expires=" not in params:
-            print("Parâmetro 'expires' não encontrado.")
-            return False
-        
-        expiration_timestamp = int(params.split("expires=")[1])
-        
-        # Verifica se o link expirou
-        if datetime.utcnow().timestamp() > expiration_timestamp:
-            print("Link expirado.")
-            return False
-        
-        # Verifica se o user_id está correto
-        if parts[-2] != user_id:
-            print("User ID não corresponde.")
-            return False
-        
-        print("Link válido.")
-        return True
+        payload = {"content": message}
+        response = requests.post(webhook_url, json=payload)
+        response.raise_for_status()  # Verifica se houve erro na requisição
+        print(f"Mensagem enviada com sucesso: {message}")
     except Exception as e:
-        print(f"Erro ao validar o link: {e}")
-        return False
+        print(f"Erro ao enviar mensagem para o webhook: {e}")
 
-# Exemplo de uso
+def main():
+    """
+    Gera links e envia para o webhook em loop.
+    """
+    while True:
+        try:
+            # Gera o link
+            generated_link = generate_unique_link(BASE_URL, USER_ID, EXPIRATION_MINUTES)
+            if generated_link:
+                print(f"Link gerado: {generated_link}")
+                
+                # Envia o link para o webhook
+                send_to_webhook(WEBHOOK_URL, generated_link)
+            else:
+                print("Falha ao gerar o link.")
+            
+            # Aguarda antes de gerar o próximo link
+            time.sleep(LOOP_DELAY)
+        except KeyboardInterrupt:
+            print("Loop interrompido pelo usuário.")
+            break
+        except Exception as e:
+            print(f"Erro no loop principal: {e}")
+            break
+
+# Executa o script
 if __name__ == "__main__":
-    # Configurações
-    base_url = "https://discord.com/billing/partner-promotions"
-    user_id = "1310745070936391821"
-    expiration_minutes = 10  # Tempo de expiração do link
-
-    # Gera o link
-    generated_link = generate_unique_link(base_url, user_id, expiration_minutes)
-    if generated_link:
-        print("Generated Link:", generated_link)
-        
-        # Valida o link
-        is_valid = validate_link(generated_link, user_id)
-        print("Link válido?" if is_valid else "Link inválido!")
-    else:
-        print("Falha ao gerar o link.")
+    main()
