@@ -1,70 +1,44 @@
+import discord
 import uuid
-import requests
-from datetime import datetime, timedelta
 import time
+from discord.ext import commands
 
-# Configurações
-WEBHOOK_URL = "https://discord.com/api/webhooks/1349146856722006017/impqKgyW1lZWuSMlmKLvOSLkzUKHlpMHTut3wVMLbk3R4N-Gr9l_He9XmNmydmp11P36"
-BASE_URL = "https://discord.com/billing/partner-promotions"
-USER_ID = "1310745070936391821"
-EXPIRATION_MINUTES = 10  # Tempo de expiração do link
-LOOP_DELAY = 5  # Intervalo entre envios (em segundos)
+# Configurações do bot
+TOKEN = 'MTM0OTE1MTUwNzY2NDIxMjA4MA.Gok6zF.NfXbt30TD_766rYzzOHi0O8oHk322YY16G_aZQ'  # Substitua pelo token do seu bot
+PROMO_ID = '1310745070936391821'
 
-def generate_unique_link(base_url, user_id, expiration_minutes):
-    """
-    Gera um link único com um token e um tempo de expiração.
-    """
+# Inicialização do bot
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix=".", intents=intents)
+
+# Função para gerar o link Nitro
+def generate_nitro_link():
+    # Gerar UUID v4
+    unique_id = str(uuid.uuid4())
+    
+    # Gerar timestamp de expiração (24 horas a partir de agora)
+    expiration_time = int(time.time()) + 86400  # 86400 segundos = 24 horas
+    
+    # Montar o link
+    nitro_link = f"https://discord.com/billing/partner-promotions/{PROMO_ID}/{unique_id}?expires={expiration_time}"
+    
+    return nitro_link
+
+# Comando para gerar o link Nitro
+@bot.command(name='gen nitro')
+async def gen_nitro(ctx):
+    # Gerar o link
+    nitro_link = generate_nitro_link()
+    
     try:
-        # Gera um token único
-        token = str(uuid.uuid4())
-        
-        # Calcula o tempo de expiração
-        expiration_time = datetime.utcnow() + timedelta(minutes=expiration_minutes)
-        
-        # Cria o link completo
-        link = f"{base_url}/{user_id}/{token}?expires={int(expiration_time.timestamp())}"
-        return link
-    except Exception as e:
-        print(f"Erro ao gerar o link: {e}")
-        return None
+        # Enviar o link via DM
+        await ctx.author.send(f"Aqui está o seu link Nitro: {nitro_link}")
+        # Notificar no canal que a mensagem foi enviada
+        await ctx.send(f"{ctx.author.mention}, verifique suas mensagens diretas (DMs)!")
+    except discord.Forbidden:
+        # Se o usuário tiver DMs desativadas
+        await ctx.send(f"{ctx.author.mention}, não foi possível enviar a mensagem direta. Verifique se suas DMs estão ativadas!")
 
-def send_to_webhook(webhook_url, message):
-    """
-    Envia uma mensagem para um webhook do Discord.
-    """
-    try:
-        payload = {"content": message}
-        response = requests.post(webhook_url, json=payload)
-        response.raise_for_status()  # Verifica se houve erro na requisição
-        print(f"Mensagem enviada com sucesso: {message}")
-    except Exception as e:
-        print(f"Erro ao enviar mensagem para o webhook: {e}")
-
-def main():
-    """
-    Gera links e envia para o webhook em loop.
-    """
-    while True:
-        try:
-            # Gera o link
-            generated_link = generate_unique_link(BASE_URL, USER_ID, EXPIRATION_MINUTES)
-            if generated_link:
-                print(f"Link gerado: {generated_link}")
-                
-                # Envia o link para o webhook
-                send_to_webhook(WEBHOOK_URL, generated_link)
-            else:
-                print("Falha ao gerar o link.")
-            
-            # Aguarda antes de gerar o próximo link
-            time.sleep(LOOP_DELAY)
-        except KeyboardInterrupt:
-            print("Loop interrompido pelo usuário.")
-            break
-        except Exception as e:
-            print(f"Erro no loop principal: {e}")
-            break
-
-# Executa o script
-if __name__ == "__main__":
-    main()
+# Iniciar o bot
+bot.run(TOKEN)
